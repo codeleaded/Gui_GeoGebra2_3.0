@@ -29,6 +29,8 @@
 #define TOKEN_MFUNCTION_SIN 	(TOKEN_START + 6)
 #define TOKEN_MFUNCTION_COS 	(TOKEN_START + 7)
 #define TOKEN_MFUNCTION_TAN 	(TOKEN_START + 8)
+#define TOKEN_MFUNCTION_EXP 	(TOKEN_START + 9)
+#define TOKEN_MFUNCTION_LOG 	(TOKEN_START + 10)
 
 MType MFunction_Add(Vector* args){
 	return ((MType*)Vector_Get(args,0))[0] + ((MType*)Vector_Get(args,1))[0];
@@ -57,6 +59,12 @@ MType MFunction_Cos(Vector* args){
 }
 MType MFunction_Tan(Vector* args){
 	return tan(((MType*)Vector_Get(args,0))[0]);
+}
+MType MFunction_Exp(Vector* args){
+	return exp(((MType*)Vector_Get(args,0))[0]);
+}
+MType MFunction_Log(Vector* args){
+	return log(((MType*)Vector_Get(args,0))[0]);
 }
 
 
@@ -105,12 +113,12 @@ TransformedView tv;
 void Setup(AlxWindow* w){
 	tv = TransformedView_Make(
 		(Vec2){ GetWidth(),GetHeight() },
-		(Vec2){ 0.0f,0.0f },
-		(Vec2){ 1.0f,1.0f },
+		(Vec2){ -25.0f,-50.0f },
+		(Vec2){ 0.01f,0.01f },
 		(float)GetHeight() / (float)GetWidth()
 	);
 
-	tb = TextBox_New(Input_New(50,1),(Rect){0.0f,0.0f,2300.0f,100.0f},ALXFONT_PATHS_HIGH,25,50,BLACK);
+	tb = TextBox_New(Input_New(50,1),(Rect){0.0f,0.0f,2300.0f,100.0f},ALXFONT_PATHS_HIGH,50,100,BLACK);
 	Functions = Vector_New(sizeof(GFunction));
 	mi = MInterpreter_New(
 		MVariableMap_Make((MVariable[]){
@@ -127,6 +135,8 @@ void Setup(AlxWindow* w){
 			MFunc_New(TOKEN_MFUNCTION_SIN,1,(MType(*)(Vector*))MFunction_Sin),
 			MFunc_New(TOKEN_MFUNCTION_COS,1,(MType(*)(Vector*))MFunction_Cos),
 			MFunc_New(TOKEN_MFUNCTION_TAN,1,(MType(*)(Vector*))MFunction_Tan),
+			MFunc_New(TOKEN_MFUNCTION_EXP,1,(MType(*)(Vector*))MFunction_Exp),
+			MFunc_New(TOKEN_MFUNCTION_LOG,1,(MType(*)(Vector*))MFunction_Log),
 			MFunc_Null(),
 		}),
 		KeywordMap_Make((KeywordRP[]){
@@ -139,14 +149,16 @@ void Setup(AlxWindow* w){
 			KeywordRP_New("sin",TOKEN_MFUNCTION_SIN),
 			KeywordRP_New("cos",TOKEN_MFUNCTION_COS),
 			KeywordRP_New("tan",TOKEN_MFUNCTION_TAN),
+			KeywordRP_New("exp",TOKEN_MFUNCTION_EXP),
+			KeywordRP_New("log",TOKEN_MFUNCTION_LOG),
 			KeywordRP_Null(),
 		}),
 		OperatorMap_Make((OperatorRP[]){
 			OperatorRP_Make((TT_Type[]){ TOKEN_PLUS_SIGN,TOKEN_END },	TOKEN_MFUNCTION_ADD,ARGS_IGNORE),
-			OperatorRP_Make((TT_Type[]){ TOKEN_MINUS_SIGN,TOKEN_END },	TOKEN_MFUNCTION_SUB,2),
+			OperatorRP_Make((TT_Type[]){ TOKEN_MINUS_SIGN,TOKEN_END },	TOKEN_MFUNCTION_SUB,1),
 			OperatorRP_Make((TT_Type[]){ TOKEN_ASTERISK,TOKEN_END },	TOKEN_MFUNCTION_MUL,ARGS_IGNORE),
 			OperatorRP_Make((TT_Type[]){ TOKEN_SLASH,TOKEN_END },		TOKEN_MFUNCTION_DIV,ARGS_IGNORE),
-			OperatorRP_Make((TT_Type[]){ TOKEN_MINUS_SIGN,TOKEN_END },	TOKEN_MFUNCTION_NEG,1),
+			OperatorRP_Make((TT_Type[]){ TOKEN_MINUS_SIGN,TOKEN_END },	TOKEN_MFUNCTION_NEG,0),
 			OperatorRP_Make((TT_Type[]){ TOKEN_CARET,TOKEN_END },		TOKEN_MFUNCTION_POW,ARGS_IGNORE),
 			OperatorRP_Null(),
 		}),
@@ -161,6 +173,10 @@ void Setup(AlxWindow* w){
 				Precedencer_New(TOKEN_MFUNCTION_SIN,7),
 				Precedencer_New(TOKEN_MFUNCTION_COS,7),
 				Precedencer_New(TOKEN_MFUNCTION_TAN,7),
+				Precedencer_New(TOKEN_MFUNCTION_EXP,7),
+				Precedencer_New(TOKEN_MFUNCTION_LOG,7),
+                Precedencer_New(TOKEN_PARENTHESES_L,PRECEDENCE_BRACKL),
+                Precedencer_New(TOKEN_PARENTHESES_R,PRECEDENCE_BRACKR),
 				Precedencer_End,
 			}),
 			ExecuteMap_Make((Executer[]){
@@ -173,6 +189,8 @@ void Setup(AlxWindow* w){
 				Executer_New(TOKEN_MFUNCTION_SIN,1,NULL),
 				Executer_New(TOKEN_MFUNCTION_COS,1,NULL),
 				Executer_New(TOKEN_MFUNCTION_TAN,1,NULL),
+				Executer_New(TOKEN_MFUNCTION_EXP,1,NULL),
+				Executer_New(TOKEN_MFUNCTION_LOG,1,NULL),
 				Executer_End,
 			}),
 			PreexecuteMap_Make((Preexecuter[]){
@@ -246,7 +264,7 @@ void Setup(AlxWindow* w){
         })
 	);
 
-	MInterpreter_Print(&mi);
+	//MInterpreter_Print(&mi);
 }
 void Update(AlxWindow* w){
 	TransformedView_HandlePanZoom(&tv,window.Strokes,GetMouse());
